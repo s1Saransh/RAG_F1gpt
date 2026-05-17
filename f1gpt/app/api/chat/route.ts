@@ -21,6 +21,11 @@ type ScoredDocument = StoredF1Document & {
   score: number;
 };
 
+type RetrievalResult = {
+  error?: string;
+  matches: ScoredDocument[];
+};
+
 const {
   EMBEDDING_MODEL = "Xenova/all-MiniLM-L6-v2",
   MONGODB_COLLECTION = "f1_embeddings",
@@ -134,7 +139,7 @@ function createContext(matches: ScoredDocument[]) {
 
 function createFallbackAnswer(question: string, matches: ScoredDocument[]) {
   if (!matches.length) {
-    return "I could not find matching Formula 1 context in MongoDB yet. Try running npm run seed again, then ask another F1 question.";
+    return `I could not read matching Formula 1 context from MongoDB for: "${question}". Check your MongoDB connection, then run npm run seed again if the collection is empty.`;
   }
 
   const snippets = matches
@@ -147,6 +152,22 @@ function createFallbackAnswer(question: string, matches: ScoredDocument[]) {
     .join("\n\n");
 
   return `I found relevant MongoDB context for: "${question}"\n\n${snippets}`;
+}
+
+function explainMongoError(error: unknown) {
+  if (error instanceof Error) {
+    if (error.message.includes("querySrv")) {
+      return "MongoDB DNS lookup failed for your mongodb+srv URL. Check the Atlas cluster hostname, internet/DNS access, and whether the cluster is active.";
+    }
+
+    if (error.message.includes("Missing MONGODB_URI")) {
+      return "MONGODB_URI is missing in f1gpt/.env.";
+    }
+
+    return error.message;
+  }
+
+  return "MongoDB retrieval failed.";
 }
 
 function streamResponse(write: (send: (text: string) => void) => Promise<void>) {
@@ -193,29 +214,34 @@ export async function POST(req: Request) {
     });
   }
 
-  let matches: ScoredDocument[];
+  const retrieval: RetrievalResult = { matches: [] };
 
   try {
-    matches = await retrieveMongoContext(question);
+    retrieval.matches = await retrieveMongoContext(question);
   } catch (error) {
     console.error("MongoDB retrieval error:", error);
-    return streamResponse(async (send) => {
-      send(
-        "I could not connect to the MongoDB data right now. Check MONGODB_URI and confirm your MongoDB cluster is reachable, then try again."
-      );
-    });
+    retrieval.error = explainMongoError(error);
   }
 
-  const docContext = createContext(matches);
+  const docContext = retrieval.error
+    ? `MongoDB context is unavailable: ${retrieval.error}`
+    : createContext(retrieval.matches);
 
   if (!openai) {
     return streamResponse(async (send) => {
-      send(createFallbackAnswer(question, matches));
+      if (retrieval.error) {
+        send(
+          `${retrieval.error}\n\nI cannot answer from your seeded MongoDB data until that connection works.`
+        );
+        return;
+      }
+
+      send(createFallbackAnswer(question, retrieval.matches));
     });
   }
 
   const systemPrompt = `You are F1GPT, an AI assistant specialized in Formula 1 racing.
-Use the MongoDB context below first. If the context is not enough, say what is missing and answer carefully from general F1 knowledge.
+Use the MongoDB context below first. If MongoDB context is unavailable or not enough, briefly say that and answer carefully from general F1 knowledge.
 
 MongoDB context:
 ${docContext}
@@ -242,7 +268,14 @@ Keep the answer concise and helpful.`;
       }
     } catch (error) {
       console.error("OpenAI response error:", error);
-      send(createFallbackAnswer(question, matches));
+      if (retrieval.error) {
+        send(
+          `${retrieval.error}\n\nOpenAI also could not generate a fallback answer, so the next thing to fix is your MongoDB URI or Atlas network access.`
+        );
+        return;
+      }
+
+      send(createFallbackAnswer(question, retrieval.matches));
     }
   });
 }
