@@ -2,6 +2,7 @@ import { MongoClient } from "mongodb"
 import { PuppeteerWebBaseLoader } from "@langchain/community/document_loaders/web/puppeteer"
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters"
 import { pipeline } from "@huggingface/transformers"
+import type { FeatureExtractionPipeline } from "@huggingface/transformers"
 
 import dotenv from "dotenv"
 import path from "path"
@@ -47,10 +48,10 @@ const createMongoClient = () => new MongoClient(MONGODB_URI, {
     serverSelectionTimeoutMS: 5_000,
 })
 
-let extractorPromise: Promise<any> | undefined
+let extractorPromise: Promise<FeatureExtractionPipeline> | undefined
 
 const getExtractor = () => {
-    extractorPromise ??= pipeline("feature-extraction", EMBEDDING_MODEL)
+    extractorPromise ??= pipeline("feature-extraction", EMBEDDING_MODEL) as Promise<FeatureExtractionPipeline>
     return extractorPromise
 }
 

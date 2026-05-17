@@ -4,10 +4,10 @@
   "private": true,
   "description": "Next.js RAG chatbot with LangChain, MongoDB, and local embeddings",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
+    "dev": "npm --prefix f1gpt run dev",
+    "build": "npm --prefix f1gpt run build",
+    "start": "npm --prefix f1gpt run start",
+    "lint": "npm --prefix f1gpt run lint",
     "seed": "tsx f1gpt/scripts/loadDb.ts"
   },
   "dependencies": {
