@@ -111,7 +111,7 @@ export default function Home() {
             <h1 className="text-xl font-semibold">F1GPT Chat</h1>
           </div>
           <p className="mt-1 text-sm text-slate-500">
-            Ask questions against the Formula 1 data you seeded into MongoDB.
+            Interact with the seeded Formula 1 dataset through queries
           </p>
         </header>
 
