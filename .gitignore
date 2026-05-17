@@ -40,3 +40,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local dev logs
+*.log
+dev.*.log
+
+# ai tool config (not project files)
+AGENTS.md
+CLAUDE.md
+
+# nested git backups
+.nested-git-backup/
