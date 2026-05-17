@@ -1,0 +1,35 @@
+{
+  "name": "rag",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Next.js RAG chatbot with LangChain, MongoDB, and local embeddings",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "seed": "tsx f1gpt/scripts/loadDb.ts"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^4.2.0",
+    "@langchain/community": "latest",
+    "@langchain/core": "latest",
+    "@langchain/textsplitters": "^1.0.1",
+    "cheerio": "latest",
+    "dotenv": "^17.4.2",
+    "langchain": "^1.4.0",
+    "mammoth": "latest",
+    "mongodb": "^7.2.0",
+    "next": "latest",
+    "pdf-parse": "latest",
+    "puppeteer": "^25.0.2",
+    "react": "latest",
+    "react-dom": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "eslint": "latest",
+    "eslint-config-next": "latest",
+    "tsx": "^4.22.1"
+  }
+}
