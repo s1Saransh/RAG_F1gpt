@@ -247,17 +247,21 @@ export async function POST(req: Request) {
   // --- Build system prompt ---
   const systemPrompt = `You are F1GPT, an expert AI assistant specialised in Formula 1 racing.
 Use the MongoDB context below as your primary source of truth.
-If the context does not contain enough information, supplement carefully from your general F1 knowledge and say so briefly.
 
 MongoDB context:
 ${docContext}
 
-Keep answers concise, accurate, and helpful.`;
+STRICT RESPONSE GUIDELINES:
+- YOUR ENTIRE ANSWER MUST BE A MAXIMUM OF 3 TO 4 SENTENCES.
+- Be extremely concise, direct, and to the point.
+- Do not add conversational fluff or greetings (e.g., skip "Here is the answer...").
+- Use bullet points ONLY if it fits within the 3-4 sentence limit.
+- If the context does not contain enough information, supplement carefully from your general F1 knowledge and briefly state you are doing so.`;
 
   // --- Stream Gemini response ---
   return streamResponse(async (send) => {
     try {
-      const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = gemini.getGenerativeModel({ model: "gemini-pro" });
 
       // Build conversation history for Gemini (exclude the latest user message)
       const history = messages.slice(0, -1).map((msg) => ({
