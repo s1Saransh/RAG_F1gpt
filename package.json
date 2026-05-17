@@ -1,35 +1,30 @@
 {
-  "name": "rag",
-  "version": "1.0.0",
+  "name": "f1gpt",
+  "version": "0.1.0",
   "private": true,
-  "description": "Next.js RAG chatbot with LangChain, MongoDB, and local embeddings",
   "scripts": {
-    "dev": "npm --prefix f1gpt run dev",
-    "build": "npm --prefix f1gpt run build",
-    "start": "npm --prefix f1gpt run start",
-    "lint": "npm --prefix f1gpt run lint",
-    "seed": "tsx f1gpt/scripts/loadDb.ts"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@huggingface/transformers": "^4.2.0",
-    "@langchain/community": "latest",
-    "@langchain/core": "latest",
-    "@langchain/textsplitters": "^1.0.1",
-    "cheerio": "latest",
-    "dotenv": "^17.4.2",
-    "langchain": "^1.4.0",
-    "mammoth": "latest",
     "mongodb": "^7.2.0",
-    "next": "latest",
-    "pdf-parse": "latest",
-    "puppeteer": "^25.0.2",
-    "react": "latest",
-    "react-dom": "latest",
-    "zod": "latest"
+    "next": "16.2.6",
+    "openai": "^6.38.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
   },
   "devDependencies": {
-    "eslint": "latest",
-    "eslint-config-next": "latest",
-    "tsx": "^4.22.1"
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.6",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
