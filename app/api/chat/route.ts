@@ -1,9 +1,9 @@
-import { pipeline } from "@huggingface/transformers";
 import type { FeatureExtractionPipeline } from "@huggingface/transformers";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { MongoClient } from "mongodb";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 type ChatMessage = {
   content: string;
@@ -62,7 +62,9 @@ function getMongoClient() {
 
 function getExtractor() {
   globalStore.f1ExtractorPromise ??= (
-    pipeline("feature-extraction", EMBEDDING_MODEL) as Promise<FeatureExtractionPipeline>
+    import("@huggingface/transformers").then(({ pipeline }) =>
+      pipeline("feature-extraction", EMBEDDING_MODEL)
+    ) as Promise<FeatureExtractionPipeline>
   ).catch((error) => {
     globalStore.f1ExtractorPromise = undefined;
     throw error;
@@ -166,6 +168,14 @@ function explainMongoError(error: unknown) {
       return "MONGODB_URI is missing in f1gpt/.env.";
     }
 
+    if (
+      error.message.includes("@huggingface/transformers") ||
+      error.message.includes("onnxruntime") ||
+      error.message.includes("fetch failed")
+    ) {
+      return "The embedding model could not load in the Vercel function. The app can still answer with Gemini, but MongoDB retrieval is unavailable for this request.";
+    }
+
     return error.message;
   }
 
@@ -203,7 +213,17 @@ function streamResponse(write: (send: (text: string) => void) => Promise<void>) 
 }
 
 export async function POST(req: Request) {
-  const body = (await req.json()) as { messages?: ChatMessage[] };
+  let body: { messages?: ChatMessage[] };
+
+  try {
+    body = (await req.json()) as { messages?: ChatMessage[] };
+  } catch (error) {
+    console.error("Invalid chat request body:", error);
+    return streamResponse(async (send) => {
+      send("The chat request was invalid. Please refresh the page and try again.");
+    });
+  }
+
   const messages = Array.isArray(body.messages) ? body.messages : [];
   const latestMessage =
     [...messages].reverse().find((message) => message.role === "user")?.content ??
