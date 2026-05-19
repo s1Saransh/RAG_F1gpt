@@ -29,6 +29,7 @@ type RetrievalResult = {
 const {
   EMBEDDING_MODEL = "Xenova/all-MiniLM-L6-v2",
   GEMINI_API_KEY,
+  GEMINI_MODEL = "gemini-2.5-flash",
   MONGODB_COLLECTION = "f1_embeddings",
   MONGODB_DB_NAME = "f1gpt",
   MONGODB_URI,
@@ -182,6 +183,26 @@ function explainMongoError(error: unknown) {
   return "MongoDB retrieval failed.";
 }
 
+function explainGeminiError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return "Gemini response failed.";
+  }
+
+  if (error.message.includes("API key not valid")) {
+    return "Your GEMINI_API_KEY is invalid. Create a new key in Google AI Studio and update it in Vercel.";
+  }
+
+  if (error.message.includes("not found") || error.message.includes("not supported")) {
+    return `The Gemini model "${GEMINI_MODEL}" is unavailable for this API key. Try setting GEMINI_MODEL to gemini-2.5-flash in Vercel.`;
+  }
+
+  if (error.message.includes("quota") || error.message.includes("429")) {
+    return "Gemini quota was exceeded for this API key. Check billing/quota in Google AI Studio or try another key.";
+  }
+
+  return error.message;
+}
+
 function streamResponse(write: (send: (text: string) => void) => Promise<void>) {
   const encoder = new TextEncoder();
 
@@ -266,7 +287,8 @@ export async function POST(req: Request) {
 
   // --- Build system prompt ---
   const systemPrompt = `You are F1GPT, an expert AI assistant specialised in Formula 1 racing.
-Use the MongoDB context below as your primary source of truth.
+Use the MongoDB context below as your primary source of truth when it is available.
+If MongoDB context is unavailable, answer from general Formula 1 knowledge without mentioning internal retrieval errors.
 
 MongoDB context:
 ${docContext}
@@ -281,7 +303,7 @@ STRICT RESPONSE GUIDELINES:
   // --- Stream Gemini response ---
   return streamResponse(async (send) => {
     try {
-      const model = gemini.getGenerativeModel({ model: "gemini-pro" });
+      const model = gemini.getGenerativeModel({ model: GEMINI_MODEL });
 
       // Build conversation history for Gemini (exclude the latest user message)
       const history = messages.slice(0, -1).map((msg) => ({
@@ -304,9 +326,7 @@ STRICT RESPONSE GUIDELINES:
       console.error("Gemini response error:", error);
 
       if (retrieval.error) {
-        send(
-          `${retrieval.error}\n\nGemini also encountered an error generating a response.`
-        );
+        send(explainGeminiError(error));
         return;
       }
 
